@@ -5,7 +5,6 @@ import Image from "next/image";
 import { ArrowRight } from "lucide-react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import Lenis from "lenis";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -52,41 +51,32 @@ const CARDS_DATA = [
 export default function Stickycards() {
   const containerRef = useRef<HTMLDivElement>(null);
   const stickyRef = useRef<HTMLDivElement>(null);
+
   const muchMoreRef = useRef<HTMLDivElement>(null);
+  const engineeringRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // 1. Initialize Lenis Smooth Scroll with rich inertia & momentum
-    const lenis = new Lenis({
-      duration: 1.6,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      orientation: "vertical",
-      gestureOrientation: "vertical",
-      smoothWheel: true,
-      wheelMultiplier: 0.95,
-      touchMultiplier: 1.5,
-    });
-
-    lenis.on("scroll", ScrollTrigger.update);
-
-    const updateTicker = (time: number) => {
-      lenis.raf(time * 1000);
-    };
-
-    gsap.ticker.add(updateTicker);
-    gsap.ticker.lagSmoothing(0);
-
-    // 2. GSAP Card Stack Timeline with weighted buttery stretch
     const ctx = gsap.context(() => {
-      const cards = gsap.utils.toArray<HTMLElement>(".sticky-cards .card");
+      const sticky = stickyRef.current;
+
+      if (!sticky) return;
+
+      const cards = gsap.utils.toArray<HTMLElement>(
+        ".sticky-cards .card"
+      );
+
       const totalCards = cards.length;
-      if (totalCards === 0 || !stickyRef.current) return;
+
+      if (!totalCards) return;
+
 
       const cardYOffset = 4;
       const cardScaleStep = 0.05;
-      const stepInterval = 1.2;
-      const stepDuration = 1.0;
 
-      // Position cards at initial stacked state
+      const stepInterval = 1.2;
+      const stepDuration = 1;
+
+
       cards.forEach((card, index) => {
         gsap.set(card, {
           xPercent: -50,
@@ -98,7 +88,9 @@ export default function Stickycards() {
         });
       });
 
-      // Position "Much more" behind cards
+
+      let underlineEl: Element | null = null;
+
       if (muchMoreRef.current) {
         gsap.set(muchMoreRef.current, {
           xPercent: -50,
@@ -106,36 +98,56 @@ export default function Stickycards() {
           opacity: 0,
           scale: 0.88,
         });
-        const underline = muchMoreRef.current.querySelector(
+
+        underlineEl = muchMoreRef.current.querySelector(
           ".much-more-underline"
         );
-        if (underline) {
-          gsap.set(underline, { scaleX: 0, transformOrigin: "left center" });
+
+        if (underlineEl) {
+          gsap.set(underlineEl, {
+            scaleX: 0,
+            transformOrigin: "left center",
+          });
         }
       }
 
-      // Build ScrollTrigger Timeline with generous scroll distance & elastic scrub
+
+      if (engineeringRef.current) {
+        gsap.set(engineeringRef.current, {
+          x: "100vw",
+          yPercent: -50,
+        });
+      }
+
+
       const tl = gsap.timeline({
         scrollTrigger: {
-          trigger: stickyRef.current,
+          trigger: sticky,
+
           start: "top top",
-          end: () => `+=${window.innerHeight * 7}px`,
+
+          end: () => `+=${window.innerHeight * 9}px`,
+
           pin: true,
+
           pinSpacing: true,
-          scrub: 1.8,
+
+          scrub: 1.4,
+
           invalidateOnRefresh: true,
+
+          anticipatePin: 1,
         },
       });
 
-      const underlineEl = muchMoreRef.current?.querySelector(
-        ".much-more-underline"
-      );
+
+      let lastStepEnd = 0;
 
       for (let step = 0; step < totalCards; step++) {
         const currentCard = cards[step];
+
         const timePos = step * stepInterval;
 
-        // Active card smoothly lifts, tilts, and floats upward
         tl.to(
           currentCard,
           {
@@ -148,33 +160,54 @@ export default function Stickycards() {
           timePos
         );
 
-        // Cards behind gently slide forward to next stack slot
-        for (let behind = step + 1; behind < totalCards; behind++) {
+        for (
+          let behind = step + 1;
+          behind < totalCards;
+          behind++
+        ) {
           const behindCard = cards[behind];
-          const newRelativePos = behind - (step + 1);
+
+          const newRelativePos =
+            behind - (step + 1);
+
           tl.to(
             behindCard,
             {
-              yPercent: -50 + newRelativePos * cardYOffset,
-              scale: 1 - newRelativePos * cardScaleStep,
+              yPercent:
+                -50 +
+                newRelativePos * cardYOffset,
+
+              scale:
+                1 -
+                newRelativePos * cardScaleStep,
+
               duration: stepDuration,
+
               ease: "power2.inOut",
             },
             timePos
           );
         }
 
-        // On the final card peel, reveal "Much more"
-        if (step === totalCards - 1 && muchMoreRef.current) {
+
+        if (
+          step === totalCards - 1 &&
+          muchMoreRef.current
+        ) {
+          const muchMoreStart =
+            timePos + 0.1;
+
           tl.to(
             muchMoreRef.current,
             {
               opacity: 1,
               scale: 1,
+
               duration: stepDuration,
+
               ease: "power2.out",
             },
-            timePos + 0.1
+            muchMoreStart
           );
 
           if (underlineEl) {
@@ -182,61 +215,209 @@ export default function Stickycards() {
               underlineEl,
               {
                 scaleX: 1,
-                duration: stepDuration * 0.9,
+
+                duration:
+                  stepDuration * 0.9,
+
                 ease: "power2.out",
               },
-              timePos + 0.2
+              muchMoreStart + 0.1
             );
           }
+
+          lastStepEnd = Math.max(
+            muchMoreStart + stepDuration,
+
+            muchMoreStart +
+            0.1 +
+            stepDuration * 0.9
+          );
         }
       }
 
-      // Refresh ScrollTrigger to recalculate exact pin dimensions
-      setTimeout(() => {
+
+      const transitionStart =
+        lastStepEnd + 0.5;
+
+
+      if (muchMoreRef.current) {
+        tl.to(
+          muchMoreRef.current,
+          {
+            xPercent: -160,
+
+            opacity: 0,
+
+            scale: 0.94,
+
+            duration: 1.2,
+
+            ease: "power2.inOut",
+          },
+          transitionStart
+        );
+      }
+
+
+      if (engineeringRef.current) {
+        tl.to(
+          engineeringRef.current,
+          {
+            x: () => {
+              const width =
+                engineeringRef.current?.offsetWidth ?? 0;
+
+              return -(window.innerWidth + width);
+            },
+
+            duration: 3.5,
+
+            ease: "none",
+          },
+          transitionStart + 0.8
+        );
+      }
+
+
+      const refreshTimer = window.setTimeout(() => {
         ScrollTrigger.refresh();
       }, 100);
+
+      return () => {
+        window.clearTimeout(refreshTimer);
+      };
     }, containerRef);
 
-    // 3. Cleanup on component unmount
     return () => {
-      gsap.ticker.remove(updateTicker);
-      lenis.destroy();
       ctx.revert();
     };
   }, []);
 
   return (
-    <div ref={containerRef} className="sticky-cards-wrapper w-full">
-      <section ref={stickyRef} className="sticky-cards relative">
-        {/* Centered "Much more" block right behind the card stack */}
-        <div ref={muchMoreRef} className="much-more-reveal">
-          <p className="text-xs uppercase tracking-[0.25em] text-white/50 mb-3 font-mono">
+    <div
+      ref={containerRef}
+      className="sticky-cards-wrapper w-full"
+    >
+      <section
+        ref={stickyRef}
+        className="
+          sticky-cards
+          relative
+          h-screen
+          w-full
+          overflow-hidden
+          bg-black
+        "
+      >
+
+        <div
+          ref={muchMoreRef}
+          className="much-more-reveal"
+        >
+          <p className="mb-3 font-mono text-xs uppercase tracking-[0.25em] text-white/50">
             And
           </p>
 
-          <h2>Much more</h2>
+          <h2>
+            Much more
+          </h2>
 
           <a
             href="https://tryalan.ai/use-cases/"
             target="_blank"
             rel="noreferrer"
-            className="much-more-btn group relative inline-flex items-center gap-3 pb-2 text-xl md:text-2xl font-medium text-white/90 transition-colors duration-300 hover:text-white"
+            className="
+              much-more-btn
+              group
+              relative
+              inline-flex
+              items-center
+              gap-3
+              pb-2
+              text-xl
+              font-medium
+              text-white/90
+              transition-colors
+              duration-300
+              hover:text-white
+              md:text-2xl
+            "
           >
-            <span>Explore all use-cases</span>
-            <span className="flex size-7 items-center justify-center rounded-full bg-white/10 transition-transform duration-300">
+            <span>
+              Explore all use-cases
+            </span>
+
+            <span
+              className="
+                flex
+                size-7
+                items-center
+                justify-center
+                rounded-full
+                bg-white/10
+                transition-transform
+                duration-300
+                group-hover:translate-x-1
+              "
+            >
               <ArrowRight className="size-4" />
             </span>
           </a>
         </div>
 
-        {/* 5 Stacking 3D Sticky Cards */}
+
+        <div
+          className="
+            pointer-events-none
+            absolute
+            inset-0
+            z-30
+            flex
+            items-center
+            overflow-hidden
+          "
+        >
+          <div
+            ref={engineeringRef}
+            className="
+              absolute
+              left-full
+              top-1/2
+              whitespace-nowrap
+              will-change-transform
+            "
+          >
+            <h2
+              className="
+                whitespace-nowrap
+                font-[var(--font-instrument-serif)]
+                text-[clamp(4.5rem,12vw,15rem)]
+                font-normal
+                leading-none
+                tracking-tight
+                text-white
+              "
+            >
+              One Engineering Brain. One Execution Layer.
+            </h2>
+          </div>
+        </div>
+
         <div className="cards">
           {CARDS_DATA.map((card) => (
-            <div key={card.id} id={card.id} className="card">
+            <div
+              key={card.id}
+              id={card.id}
+              className="card"
+            >
               <div className="col">
                 <p>{card.tag}</p>
-                <h1>{card.title}</h1>
+
+                <h1>
+                  {card.title}
+                </h1>
               </div>
+
               <div className="col">
                 <Image
                   src={card.image}

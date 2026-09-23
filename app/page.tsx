@@ -1,13 +1,17 @@
 import About from "@/components/About";
+import ContextLayer from "@/components/ContextLayer";
+import FAQ from "@/components/FAQ";
+import Footer from "@/components/Footer";
 import Herosection from "@/components/Herosection";
 
 export default function Home() {
   return (
-    <>
+    <div className="bg-[#0a0a0a]">
       <Herosection />
-      <div className="mx-auto max-w-360 px-4 sm:px-6 lg:px-8">
-        <About />
-      </div>
-    </>
+      <About />
+      <ContextLayer />
+      <FAQ />
+      <Footer />
+    </div>
   );
 }

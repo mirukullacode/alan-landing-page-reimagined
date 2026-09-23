@@ -1,5 +1,12 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Instrument_Serif, Barlow_Condensed, DM_Mono } from "next/font/google";
+import {
+  Geist,
+  Geist_Mono,
+  Instrument_Serif,
+  Barlow_Condensed,
+  DM_Mono,
+} from "next/font/google";
+
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import { ThemeProvider } from "@/components/ui/theme-provider";
@@ -33,8 +40,51 @@ const dmMono = DM_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Alan",
-  description: "The control plane for Software Teams",
+  metadataBase: new URL("https://tryalan.ai"),
+
+  title: "Alan — Ship software. Faster.",
+
+  description:
+    "Alan orchestrates your agents, code, tests, and deployments.",
+
+  openGraph: {
+    title: "Alan — Ship software. Faster.",
+
+    description:
+      "Alan orchestrates your agents, code, tests, and deployments.",
+
+    url: "https://tryalan.ai",
+
+    siteName: "Alan",
+
+    images: [
+      {
+        url: "/og-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Alan — Ship software. Faster.",
+      },
+    ],
+
+    locale: "en_US",
+
+    type: "website",
+  },
+
+  twitter: {
+    card: "summary_large_image",
+
+    title: "Alan — Ship software. Faster.",
+
+    description:
+      "Alan orchestrates your agents, code, tests, and deployments.",
+
+    images: ["/og-image.png"],
+  },
+
+  icons: {
+    icon: "/tryalanai_logo.jpg",
+  },
 };
 
 export default function RootLayout({
@@ -46,7 +96,15 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`dark ${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} ${barlowCondensed.variable} ${dmMono.variable} antialiased`}
+      className={`
+        dark
+        ${geistSans.variable}
+        ${geistMono.variable}
+        ${instrumentSerif.variable}
+        ${barlowCondensed.variable}
+        ${dmMono.variable}
+        antialiased
+      `}
     >
       <body className="min-h-screen flex flex-col bg-background text-foreground">
         <ThemeProvider
@@ -56,6 +114,7 @@ export default function RootLayout({
           forcedTheme="dark"
         >
           <Navbar />
+
           {children}
         </ThemeProvider>
       </body>
