@@ -3,7 +3,6 @@ import { Geist, Geist_Mono, Instrument_Serif, Barlow_Condensed, DM_Mono } from "
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import { ThemeProvider } from "@/components/ui/theme-provider";
-import SmoothScroll from "@/components/SmoothScroll";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -56,10 +55,8 @@ export default function RootLayout({
           enableSystem={false}
           forcedTheme="dark"
         >
-          <SmoothScroll>
-            <Navbar />
-            {children}
-          </SmoothScroll>
+          <Navbar />
+          {children}
         </ThemeProvider>
       </body>
     </html>

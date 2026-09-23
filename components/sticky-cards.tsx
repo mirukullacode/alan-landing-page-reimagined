@@ -5,6 +5,7 @@ import Image from "next/image";
 import { ArrowRight } from "lucide-react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import Lenis from "lenis";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -50,41 +51,42 @@ const CARDS_DATA = [
 
 export default function Stickycards() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const stickyRef = useRef<HTMLElement>(null);
-
+  const stickyRef = useRef<HTMLDivElement>(null);
   const muchMoreRef = useRef<HTMLDivElement>(null);
-  const howItWorksRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // 1. Initialize Lenis Smooth Scroll with rich inertia & momentum
+    const lenis = new Lenis({
+      duration: 1.6,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      orientation: "vertical",
+      gestureOrientation: "vertical",
+      smoothWheel: true,
+      wheelMultiplier: 0.95,
+      touchMultiplier: 1.5,
+    });
+
+    lenis.on("scroll", ScrollTrigger.update);
+
+    const updateTicker = (time: number) => {
+      lenis.raf(time * 1000);
+    };
+
+    gsap.ticker.add(updateTicker);
+    gsap.ticker.lagSmoothing(0);
+
+    // 2. GSAP Card Stack Timeline with weighted buttery stretch
     const ctx = gsap.context(() => {
-      if (!stickyRef.current) return;
-
-      const cards = gsap.utils.toArray<HTMLElement>(
-        ".sticky-cards .card"
-      );
-
+      const cards = gsap.utils.toArray<HTMLElement>(".sticky-cards .card");
       const totalCards = cards.length;
-
-      if (!totalCards) return;
-
-      /*
-       * ------------------------------------------------------------
-       * CONFIG
-       * ------------------------------------------------------------
-       */
+      if (totalCards === 0 || !stickyRef.current) return;
 
       const cardYOffset = 4;
       const cardScaleStep = 0.05;
-
       const stepInterval = 1.2;
-      const stepDuration = 1;
+      const stepDuration = 1.0;
 
-      /*
-       * ------------------------------------------------------------
-       * INITIAL CARD STATES
-       * ------------------------------------------------------------
-       */
-
+      // Position cards at initial stacked state
       cards.forEach((card, index) => {
         gsap.set(card, {
           xPercent: -50,
@@ -96,12 +98,7 @@ export default function Stickycards() {
         });
       });
 
-      /*
-       * ------------------------------------------------------------
-       * MUCH MORE INITIAL STATE
-       * ------------------------------------------------------------
-       */
-
+      // Position "Much more" behind cards
       if (muchMoreRef.current) {
         gsap.set(muchMoreRef.current, {
           xPercent: -50,
@@ -109,107 +106,36 @@ export default function Stickycards() {
           opacity: 0,
           scale: 0.88,
         });
-      }
-
-      /*
-       * ------------------------------------------------------------
-       * HOW IT WORKS INITIAL STATE
-       * ------------------------------------------------------------
-       *
-       * It lives INSIDE the same pinned section.
-       *
-       * It is NOT pinned separately.
-       */
-
-      if (howItWorksRef.current) {
-        const heading = howItWorksRef.current.querySelector(
-          ".how-it-works-heading"
+        const underline = muchMoreRef.current.querySelector(
+          ".much-more-underline"
         );
-
-        const badge = howItWorksRef.current.querySelector(
-          ".how-it-works-badge"
-        );
-
-        const subtitle = howItWorksRef.current.querySelector(
-          ".how-it-works-subtitle"
-        );
-
-        if (heading) {
-          gsap.set(heading, {
-            x: "100vw",
-          });
-        }
-
-        if (badge) {
-          gsap.set(badge, {
-            x: "100vw",
-          });
-        }
-
-        if (subtitle) {
-          gsap.set(subtitle, {
-            x: "100vw",
-          });
+        if (underline) {
+          gsap.set(underline, { scaleX: 0, transformOrigin: "left center" });
         }
       }
 
-      /*
-       * ------------------------------------------------------------
-       * MUCH MORE ELEMENTS
-       * ------------------------------------------------------------
-       */
-
-      const muchMoreText = muchMoreRef.current?.querySelectorAll(
-        ".much-more-label, .much-more-title, .much-more-btn"
-      );
-
-      const muchMoreArrow = muchMoreRef.current?.querySelector(
-        ".much-more-arrow"
-      );
-
-      /*
-       * ------------------------------------------------------------
-       * MAIN TIMELINE
-       * ------------------------------------------------------------
-       */
-
+      // Build ScrollTrigger Timeline with generous scroll distance & elastic scrub
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: stickyRef.current,
-
           start: "top top",
-
-          /*
-           * Cards + Much More + How It Works
-           * all happen inside this ONE pinned timeline.
-           */
-          end: () => `+=${window.innerHeight * 7.5}px`,
-
+          end: () => `+=${window.innerHeight * 7}px`,
           pin: true,
           pinSpacing: true,
-
-          scrub: 1.4,
-
+          scrub: 1.8,
           invalidateOnRefresh: true,
-
-          anticipatePin: 1,
         },
       });
 
-      /*
-       * ------------------------------------------------------------
-       * CARD STACK ANIMATION
-       * ------------------------------------------------------------
-       */
+      const underlineEl = muchMoreRef.current?.querySelector(
+        ".much-more-underline"
+      );
 
       for (let step = 0; step < totalCards; step++) {
         const currentCard = cards[step];
-
         const timePos = step * stepInterval;
 
-        /*
-         * Current card flies away.
-         */
+        // Active card smoothly lifts, tilts, and floats upward
         tl.to(
           currentCard,
           {
@@ -222,52 +148,24 @@ export default function Stickycards() {
           timePos
         );
 
-        /*
-         * Cards behind move forward.
-         */
-        for (
-          let behind = step + 1;
-          behind < totalCards;
-          behind++
-        ) {
+        // Cards behind gently slide forward to next stack slot
+        for (let behind = step + 1; behind < totalCards; behind++) {
           const behindCard = cards[behind];
-
-          const newRelativePos =
-            behind - (step + 1);
-
+          const newRelativePos = behind - (step + 1);
           tl.to(
             behindCard,
             {
-              yPercent:
-                -50 + newRelativePos * cardYOffset,
-
-              scale:
-                1 - newRelativePos * cardScaleStep,
-
+              yPercent: -50 + newRelativePos * cardYOffset,
+              scale: 1 - newRelativePos * cardScaleStep,
               duration: stepDuration,
-
               ease: "power2.inOut",
             },
             timePos
           );
         }
 
-        /*
-         * --------------------------------------------------------
-         * LAST CARD → MUCH MORE
-         * --------------------------------------------------------
-         */
-
-        if (
-          step === totalCards - 1 &&
-          muchMoreRef.current
-        ) {
-          const muchMoreStart =
-            timePos + 0.15;
-
-          /*
-           * Much More appears.
-           */
+        // On the final card peel, reveal "Much more"
+        if (step === totalCards - 1 && muchMoreRef.current) {
           tl.to(
             muchMoreRef.current,
             {
@@ -276,478 +174,69 @@ export default function Stickycards() {
               duration: stepDuration,
               ease: "power2.out",
             },
-            muchMoreStart
+            timePos + 0.1
           );
+
+          if (underlineEl) {
+            tl.to(
+              underlineEl,
+              {
+                scaleX: 1,
+                duration: stepDuration * 0.9,
+                ease: "power2.out",
+              },
+              timePos + 0.2
+            );
+          }
         }
       }
 
-      /*
-       * ------------------------------------------------------------
-       * HOW IT WORKS TRANSITION
-       * ------------------------------------------------------------
-       *
-       * IMPORTANT:
-       *
-       * This happens AFTER Much More has appeared.
-       *
-       * The user scrolls again.
-       *
-       * Much More moves left.
-       * How It Works enters from right.
-       * Background changes black → white.
-       * Text changes white → black.
-       * All at the same time.
-       * ------------------------------------------------------------
-       */
-
-      if (
-        muchMoreRef.current &&
-        howItWorksRef.current
-      ) {
-        const transitionStart =
-          totalCards * stepInterval + 0.8;
-
-        const transitionDuration = 2;
-
-        const heading =
-          howItWorksRef.current.querySelector(
-            ".how-it-works-heading"
-          );
-
-        const badge =
-          howItWorksRef.current.querySelector(
-            ".how-it-works-badge"
-          );
-
-        const subtitle =
-          howItWorksRef.current.querySelector(
-            ".how-it-works-subtitle"
-          );
-
-        /*
-         * --------------------------------------------------------
-         * MUCH MORE → MOVE LEFT
-         * --------------------------------------------------------
-         */
-
-        tl.to(
-          muchMoreRef.current,
-          {
-            xPercent: -170,
-            ease: "none",
-            duration: transitionDuration,
-          },
-          transitionStart
-        );
-
-        /*
-         * --------------------------------------------------------
-         * MUCH MORE → BLACK TEXT
-         * --------------------------------------------------------
-         */
-
-        if (muchMoreText) {
-          tl.to(
-            muchMoreText,
-            {
-              color: "#000000",
-              duration: transitionDuration,
-              ease: "power2.inOut",
-            },
-            transitionStart
-          );
-        }
-
-        /*
-         * Arrow circle → dark/light version.
-         */
-
-        if (muchMoreArrow) {
-          tl.to(
-            muchMoreArrow,
-            {
-              backgroundColor:
-                "rgba(0,0,0,0.06)",
-
-              color: "#000000",
-
-              duration: transitionDuration,
-
-              ease: "power2.inOut",
-            },
-            transitionStart
-          );
-        }
-
-        /*
-         * --------------------------------------------------------
-         * BACKGROUND BLACK → WHITE
-         * --------------------------------------------------------
-         */
-
-        tl.to(
-          stickyRef.current,
-          {
-            backgroundColor: "#ffffff",
-
-            duration: transitionDuration,
-
-            ease: "power2.inOut",
-          },
-          transitionStart
-        );
-
-        /*
-         * --------------------------------------------------------
-         * HOW IT WORKS HEADING → ENTER FROM RIGHT
-         * --------------------------------------------------------
-         */
-
-        if (heading) {
-          tl.to(
-            heading,
-            {
-              x: "-15vw",
-
-              duration: transitionDuration,
-
-              ease: "power3.out",
-            },
-            transitionStart
-          );
-        }
-
-        /*
-         * Badge enters with heading.
-         */
-
-        if (badge) {
-          tl.to(
-            badge,
-            {
-              x: "0",
-
-              duration: transitionDuration,
-
-              ease: "power3.out",
-            },
-            transitionStart + 0.15
-          );
-        }
-
-        /*
-         * Subtitle enters slightly later.
-         */
-
-        if (subtitle) {
-          tl.to(
-            subtitle,
-            {
-              x: "0",
-
-              duration: transitionDuration,
-
-              ease: "power3.out",
-            },
-            transitionStart + 0.25
-          );
-        }
-      }
-
-      /*
-       * ------------------------------------------------------------
-       * REFRESH
-       * ------------------------------------------------------------
-       */
-
-      ScrollTrigger.sort();
-
-      ScrollTrigger.refresh();
+      // Refresh ScrollTrigger to recalculate exact pin dimensions
+      setTimeout(() => {
+        ScrollTrigger.refresh();
+      }, 100);
     }, containerRef);
 
+    // 3. Cleanup on component unmount
     return () => {
+      gsap.ticker.remove(updateTicker);
+      lenis.destroy();
       ctx.revert();
     };
   }, []);
 
   return (
-    <div
-      ref={containerRef}
-      className="sticky-cards-wrapper w-full"
-    >
-      <section
-        ref={stickyRef}
-        className="
-          sticky-cards
-          relative
-          h-screen
-          w-full
-          overflow-hidden
-          bg-black
-          select-none
-        "
-      >
-        {/* ======================================================
-            MUCH MORE
-        ======================================================= */}
-
-        <div
-          ref={muchMoreRef}
-          className="
-            much-more-reveal
-            absolute
-            left-1/2
-            top-1/2
-            z-20
-            w-[90%]
-            max-w-4xl
-            -translate-y-1/2
-            text-center
-          "
-        >
-          <p
-            className="
-              much-more-label
-              mb-3
-              font-mono
-              text-xs
-              uppercase
-              tracking-[0.25em]
-              text-white/50
-            "
-          >
+    <div ref={containerRef} className="sticky-cards-wrapper w-full">
+      <section ref={stickyRef} className="sticky-cards relative">
+        {/* Centered "Much more" block right behind the card stack */}
+        <div ref={muchMoreRef} className="much-more-reveal">
+          <p className="text-xs uppercase tracking-[0.25em] text-white/50 mb-3 font-mono">
             And
           </p>
 
-          <h2
-            className="
-              much-more-title
-              mb-8
-              font-[var(--font-instrument-serif)]
-              text-7xl
-              font-normal
-              leading-none
-              tracking-tight
-              text-white
-              sm:text-8xl
-              md:text-9xl
-            "
-          >
-            Much more
-          </h2>
+          <h2>Much more</h2>
 
           <a
             href="https://tryalan.ai/use-cases/"
             target="_blank"
             rel="noreferrer"
-            className="
-              much-more-btn
-              group
-              inline-flex
-              items-center
-              gap-3
-              pb-2
-              text-xl
-              font-medium
-              text-white/90
-              transition-colors
-              duration-300
-              md:text-2xl
-            "
+            className="much-more-btn group relative inline-flex items-center gap-3 pb-2 text-xl md:text-2xl font-medium text-white/90 transition-colors duration-300 hover:text-white"
           >
             <span>Explore all use-cases</span>
-
-            <span
-              className="
-                much-more-arrow
-                flex
-                size-8
-                items-center
-                justify-center
-                rounded-full
-                bg-white/10
-                text-white
-                transition-transform
-                duration-300
-                group-hover:translate-x-1
-              "
-            >
+            <span className="flex size-7 items-center justify-center rounded-full bg-white/10 transition-transform duration-300">
               <ArrowRight className="size-4" />
             </span>
           </a>
         </div>
 
-        {/* ======================================================
-            HOW IT WORKS
-           
-            PRESENTATIONAL ONLY.
-
-            NO ScrollTrigger.
-            NO PIN.
-        ======================================================= */}
-
-        <div
-          ref={howItWorksRef}
-          className="
-            how-it-works-layer
-            pointer-events-none
-            absolute
-            inset-0
-            z-30
-            overflow-hidden
-          "
-        >
-          {/* Top row */}
-
-          <div
-            className="
-              absolute
-              left-0
-              right-0
-              top-0
-              mx-auto
-              flex
-              w-full
-              max-w-7xl
-              items-center
-              justify-between
-              px-6
-              py-16
-              sm:px-8
-            "
-          >
-            <div
-              className="
-                how-it-works-badge
-                rounded-full
-                border
-                border-black/15
-                bg-black/[0.03]
-                px-4
-                py-1.5
-                font-mono
-                text-xs
-                uppercase
-                tracking-[0.2em]
-                text-black/60
-              "
-            >
-              How it works
-            </div>
-
-            <div
-              className="
-                font-mono
-                text-xs
-                uppercase
-                tracking-[0.2em]
-                text-black/40
-              "
-            >
-              Architecture
-            </div>
-          </div>
-
-          {/* Main heading */}
-
-          <div
-            className="
-              absolute
-              left-0
-              top-1/2
-              flex
-              w-full
-              -translate-y-1/2
-              items-center
-              overflow-visible
-            "
-          >
-            <h2
-              className="
-                how-it-works-heading
-                whitespace-nowrap
-                font-[var(--font-instrument-serif)]
-                text-[clamp(4.5rem,14vw,13rem)]
-                font-normal
-                leading-none
-                tracking-tight
-                text-black
-                will-change-transform
-              "
-            >
-              One Engineering Brain.
-            </h2>
-          </div>
-
-          {/* Bottom content */}
-
-          <div
-            className="
-              absolute
-              bottom-0
-              left-0
-              right-0
-              mx-auto
-              flex
-              w-full
-              max-w-7xl
-              items-end
-              justify-between
-              px-6
-              py-16
-              sm:px-8
-            "
-          >
-            <p
-              className="
-                how-it-works-subtitle
-                max-w-xl
-                text-base
-                font-light
-                leading-relaxed
-                text-black/70
-                sm:text-lg
-                md:text-xl
-              "
-            >
-              A unified orchestration engine that coordinates
-              every coding agent, pull request, test suite,
-              and human checkpoint.
-            </p>
-
-            <span
-              className="
-                hidden
-                font-mono
-                text-xs
-                uppercase
-                tracking-widest
-                text-black/40
-                sm:inline-block
-              "
-            >
-              01 // Foundation
-            </span>
-          </div>
-        </div>
-
-        {/* ======================================================
-            CARDS
-        ======================================================= */}
-
-        <div className="cards absolute inset-0 z-10">
+        {/* 5 Stacking 3D Sticky Cards */}
+        <div className="cards">
           {CARDS_DATA.map((card) => (
-            <div
-              key={card.id}
-              id={card.id}
-              className="card"
-            >
+            <div key={card.id} id={card.id} className="card">
               <div className="col">
                 <p>{card.tag}</p>
-
                 <h1>{card.title}</h1>
               </div>
-
               <div className="col">
                 <Image
                   src={card.image}
