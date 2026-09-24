@@ -6,7 +6,7 @@ import Herosection from "@/components/Herosection";
 
 export default function Home() {
   return (
-    <div className="bg-[#0a0a0a]">
+    <div className="bg-[#111111]">
       <Herosection />
       <About />
       <ContextLayer />

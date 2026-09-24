@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { ArrowRight, Plus } from "lucide-react";
 
 const FAQ_DATA = [
     {
@@ -52,7 +52,7 @@ export default function FAQ() {
     };
 
     return (
-        <section className="relative w-full overflow-hidden bg-[#0a0a0a] px-4 py-16 sm:px-6 md:py-24 lg:px-10">
+        <section className="relative w-full overflow-hidden bg-[#111111] px-4 py-16 sm:px-6 md:py-24 lg:px-10">
             <div
                 className="
                     relative
@@ -93,7 +93,7 @@ export default function FAQ() {
                         "
                     >
                         <span className="h-1 w-1 rounded-full bg-white/40" />
-                        <span>FAQs</span>
+                        <span>FAQ</span>
                     </div>
 
                     <h2
@@ -108,7 +108,7 @@ export default function FAQ() {
                             md:text-7xl
                         "
                     >
-                        Common Questions
+                        Your Questions <br />Answered
                     </h2>
                 </div>
 
@@ -227,50 +227,6 @@ export default function FAQ() {
                             );
                         })}
                     </div>
-                </div>
-
-                <div className="mt-12 flex flex-col items-center text-center">
-                    <p className="text-xs text-white/40">
-                        Have any other questions?
-                    </p>
-
-                    <a
-                        href="mailto:hello@tryalan.ai"
-                        className="
-                            group
-                            mt-2
-                            inline-flex
-                            items-center
-                            gap-2
-                            text-xs
-                            font-medium
-                            text-white/75
-                            underline
-                            underline-offset-4
-                            transition-colors
-                            hover:text-white
-                        "
-                    >
-                        Contact Us
-
-                        <span
-                            className="
-                                flex
-                                h-4
-                                w-4
-                                items-center
-                                justify-center
-                                rounded-full
-                                bg-white/10
-                                no-underline
-                                transition-transform
-                                duration-300
-                                group-hover:translate-x-1
-                            "
-                        >
-                            →
-                        </span>
-                    </a>
                 </div>
             </div>
         </section>

@@ -9,6 +9,7 @@ import {
 
 import "./globals.css";
 import Navbar from "@/components/Navbar";
+import CustomCursor from "@/components/CustomCursor" 
 import { ThemeProvider } from "@/components/ui/theme-provider";
 
 const geistSans = Geist({
@@ -106,7 +107,7 @@ export default function RootLayout({
         antialiased
       `}
     >
-      <body className="min-h-screen flex flex-col bg-background text-foreground">
+      <body className="min-h-screen flex flex-col bg-[#111111] text-foreground">
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"
@@ -114,7 +115,7 @@ export default function RootLayout({
           forcedTheme="dark"
         >
           <Navbar />
-
+          <CustomCursor/>
           {children}
         </ThemeProvider>
       </body>

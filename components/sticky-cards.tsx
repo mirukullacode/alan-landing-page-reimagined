@@ -38,6 +38,10 @@ const CARDS_DATA = [
     title: "Recurring engineering work as a repeatable workflow",
     image:
       "https://i.pinimg.com/736x/f4/28/2f/f4282f5e07fac477deb7be7888c31c24.jpg",
+
+    // Sky-blue treatment
+    color: "#8ECFE0",
+    textColor: "#10252B",
   },
   {
     id: "card-5",
@@ -69,14 +73,18 @@ export default function Stickycards() {
 
       if (!totalCards) return;
 
-
+      /*
+       * CARD STACK SETTINGS
+       */
       const cardYOffset = 4;
       const cardScaleStep = 0.05;
 
       const stepInterval = 1.2;
       const stepDuration = 1;
 
-
+      /*
+       * INITIAL CARD POSITIONS
+       */
       cards.forEach((card, index) => {
         gsap.set(card, {
           xPercent: -50,
@@ -88,7 +96,9 @@ export default function Stickycards() {
         });
       });
 
-
+      /*
+       * MUCH MORE SECTION
+       */
       let underlineEl: Element | null = null;
 
       if (muchMoreRef.current) {
@@ -99,9 +109,10 @@ export default function Stickycards() {
           scale: 0.88,
         });
 
-        underlineEl = muchMoreRef.current.querySelector(
-          ".much-more-underline"
-        );
+        underlineEl =
+          muchMoreRef.current.querySelector(
+            ".much-more-underline"
+          );
 
         if (underlineEl) {
           gsap.set(underlineEl, {
@@ -111,7 +122,9 @@ export default function Stickycards() {
         }
       }
 
-
+      /*
+       * ENGINEERING TEXT
+       */
       if (engineeringRef.current) {
         gsap.set(engineeringRef.current, {
           x: "100vw",
@@ -119,14 +132,17 @@ export default function Stickycards() {
         });
       }
 
-
+      /*
+       * MAIN SCROLL TIMELINE
+       */
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: sticky,
 
           start: "top top",
 
-          end: () => `+=${window.innerHeight * 9}px`,
+          end: () =>
+            `+=${window.innerHeight * 9}px`,
 
           pin: true,
 
@@ -140,14 +156,24 @@ export default function Stickycards() {
         },
       });
 
-
       let lastStepEnd = 0;
 
-      for (let step = 0; step < totalCards; step++) {
+      /*
+       * CARD ANIMATION
+       */
+      for (
+        let step = 0;
+        step < totalCards;
+        step++
+      ) {
         const currentCard = cards[step];
 
-        const timePos = step * stepInterval;
+        const timePos =
+          step * stepInterval;
 
+        /*
+         * CURRENT CARD LEAVES
+         */
         tl.to(
           currentCard,
           {
@@ -160,12 +186,16 @@ export default function Stickycards() {
           timePos
         );
 
+        /*
+         * CARDS BEHIND MOVE FORWARD
+         */
         for (
           let behind = step + 1;
           behind < totalCards;
           behind++
         ) {
-          const behindCard = cards[behind];
+          const behindCard =
+            cards[behind];
 
           const newRelativePos =
             behind - (step + 1);
@@ -175,11 +205,13 @@ export default function Stickycards() {
             {
               yPercent:
                 -50 +
-                newRelativePos * cardYOffset,
+                newRelativePos *
+                  cardYOffset,
 
               scale:
                 1 -
-                newRelativePos * cardScaleStep,
+                newRelativePos *
+                  cardScaleStep,
 
               duration: stepDuration,
 
@@ -189,7 +221,9 @@ export default function Stickycards() {
           );
         }
 
-
+        /*
+         * AFTER LAST CARD
+         */
         if (
           step === totalCards - 1 &&
           muchMoreRef.current
@@ -197,19 +231,26 @@ export default function Stickycards() {
           const muchMoreStart =
             timePos + 0.1;
 
+          /*
+           * MUCH MORE APPEARS
+           */
           tl.to(
             muchMoreRef.current,
             {
               opacity: 1,
               scale: 1,
 
-              duration: stepDuration,
+              duration:
+                stepDuration,
 
               ease: "power2.out",
             },
             muchMoreStart
           );
 
+          /*
+           * UNDERLINE
+           */
           if (underlineEl) {
             tl.to(
               underlineEl,
@@ -225,21 +266,29 @@ export default function Stickycards() {
             );
           }
 
-          lastStepEnd = Math.max(
-            muchMoreStart + stepDuration,
+          lastStepEnd =
+            Math.max(
+              muchMoreStart +
+                stepDuration,
 
-            muchMoreStart +
-            0.1 +
-            stepDuration * 0.9
-          );
+              muchMoreStart +
+                0.1 +
+                stepDuration *
+                  0.9
+            );
         }
       }
 
-
+      /*
+       * TRANSITION INTO
+       * ENGINEERING SECTION
+       */
       const transitionStart =
         lastStepEnd + 0.5;
 
-
+      /*
+       * MOVE MUCH MORE OUT
+       */
       if (muchMoreRef.current) {
         tl.to(
           muchMoreRef.current,
@@ -258,16 +307,22 @@ export default function Stickycards() {
         );
       }
 
-
+      /*
+       * ENGINEERING TEXT
+       */
       if (engineeringRef.current) {
         tl.to(
           engineeringRef.current,
           {
             x: () => {
               const width =
-                engineeringRef.current?.offsetWidth ?? 0;
+                engineeringRef.current
+                  ?.offsetWidth ?? 0;
 
-              return -(window.innerWidth + width);
+              return -(
+                window.innerWidth +
+                width
+              );
             },
 
             duration: 3.5,
@@ -278,13 +333,18 @@ export default function Stickycards() {
         );
       }
 
-
-      const refreshTimer = window.setTimeout(() => {
-        ScrollTrigger.refresh();
-      }, 100);
+      /*
+       * REFRESH SCROLLTRIGGER
+       */
+      const refreshTimer =
+        window.setTimeout(() => {
+          ScrollTrigger.refresh();
+        }, 100);
 
       return () => {
-        window.clearTimeout(refreshTimer);
+        window.clearTimeout(
+          refreshTimer
+        );
       };
     }, containerRef);
 
@@ -309,16 +369,49 @@ export default function Stickycards() {
           bg-black
         "
       >
+        {/* ================================= */}
+        {/* MUCH MORE */}
+        {/* ================================= */}
 
         <div
           ref={muchMoreRef}
-          className="much-more-reveal"
+          className="
+            much-more-reveal
+            absolute
+            left-1/2
+            top-1/2
+            z-20
+            flex
+            -translate-x-1/2
+            -translate-y-1/2
+            flex-col
+            items-start
+          "
         >
-          <p className="mb-3 font-mono text-xs uppercase tracking-[0.25em] text-white/50">
+          <p
+            className="
+              mb-3
+              font-mono
+              text-xs
+              uppercase
+              tracking-[0.25em]
+              text-white/50
+            "
+          >
             And
           </p>
 
-          <h2>
+          <h2
+            className="
+              mb-6
+              font-[var(--font-instrument-serif)]
+              text-7xl
+              font-normal
+              leading-none
+              text-white
+              md:text-8xl
+            "
+          >
             Much more
           </h2>
 
@@ -362,9 +455,25 @@ export default function Stickycards() {
             >
               <ArrowRight className="size-4" />
             </span>
+
+            <span
+              className="
+                much-more-underline
+                absolute
+                bottom-0
+                left-0
+                h-px
+                w-full
+                origin-left
+                bg-white/50
+              "
+            />
           </a>
         </div>
 
+        {/* ================================= */}
+        {/* ENGINEERING TEXT */}
+        {/* ================================= */}
 
         <div
           className="
@@ -398,10 +507,15 @@ export default function Stickycards() {
                 text-white
               "
             >
-              One Engineering Brain. One Execution Layer.
+              One Engineering Brain.
+              One Execution Layer.
             </h2>
           </div>
         </div>
+
+        {/* ================================= */}
+        {/* CARDS */}
+        {/* ================================= */}
 
         <div className="cards">
           {CARDS_DATA.map((card) => (
@@ -409,15 +523,37 @@ export default function Stickycards() {
               key={card.id}
               id={card.id}
               className="card"
+              style={
+                card.color
+                  ? {
+                      backgroundColor:
+                        card.color,
+                      color:
+                        card.textColor,
+                    }
+                  : undefined
+              }
             >
+              {/* LEFT COLUMN */}
               <div className="col">
-                <p>{card.tag}</p>
+                <p
+                  style={
+                    card.textColor
+                      ? {
+                          color: `${card.textColor}99`,
+                        }
+                      : undefined
+                  }
+                >
+                  {card.tag}
+                </p>
 
                 <h1>
                   {card.title}
                 </h1>
               </div>
 
+              {/* RIGHT COLUMN */}
               <div className="col">
                 <Image
                   src={card.image}
@@ -425,7 +561,11 @@ export default function Stickycards() {
                   width={800}
                   height={600}
                   unoptimized
-                  className="h-full w-full object-cover"
+                  className="
+                    h-full
+                    w-full
+                    object-cover
+                  "
                 />
               </div>
             </div>
